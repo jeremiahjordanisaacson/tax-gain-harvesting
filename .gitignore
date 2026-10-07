@@ -26,6 +26,12 @@
 .copilot_token
 .copilot_session
 
+# --- AGI/Clu brain exports: NEVER commit (may contain personal memory data) ---
+brain.html
+brain-graph.html
+brain*.html
+*brain-graph*
+
 # --- Python noise (in case any analysis script lands here) ---
 __pycache__/
 *.py[cod]
