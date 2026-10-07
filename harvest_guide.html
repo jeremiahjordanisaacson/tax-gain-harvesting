@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tax-Gain Harvesting — A Plain-English Guide</title>
+<style>
+  :root{
+    --bg:#fbf6ea; --panel:#fffdf7; --panel2:#f3ead3; --border:#e6d6b3;
+    --ink:#3a2f21; --muted:#8a7757; --amber:#a8730c; --gold:#d79a1e;
+    --field:#3f7f2c; --barn:#a6401f; --sky:#3f7cac; --soil:#7a5230; --red:#c0392b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    line-height:1.6;font-size:16px}
+  a{color:var(--amber)}
+  .wrap{max-width:1100px;margin:0 auto;padding:24px}
+  header{position:relative;padding:54px 24px 40px;text-align:center;overflow:hidden;
+    border-bottom:1px solid var(--border);
+    background:linear-gradient(180deg,#e9f1f7 0%,#f6e9c7 55%,var(--bg) 100%)}
+  header .sun{position:absolute;top:22px;left:50%;transform:translateX(-50%);
+    width:72px;height:72px;border-radius:50%;
+    background:radial-gradient(circle,#ffe79a 0%,#f7c948 60%,rgba(247,201,72,0) 72%);opacity:.9}
+  header h1{position:relative;margin:0 0 8px;font-size:42px;letter-spacing:-0.5px;color:var(--soil)}
+  header p{position:relative;margin:0;color:var(--muted);font-size:18px}
+  .field-strip{height:22px;background:repeating-linear-gradient(90deg,#caa23a 0 7px,#d7b14b 7px 14px);
+    border-bottom:3px solid #6b4f2a}
+  nav{position:sticky;top:0;background:rgba(251,246,234,0.95);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);z-index:10;padding:12px 24px;
+    display:flex;gap:14px;flex-wrap:wrap;justify-content:center;font-size:13.5px}
+  nav a{color:var(--muted);text-decoration:none}
+  nav a:hover{color:var(--amber)}
+  section{margin:48px 0;scroll-margin-top:60px}
+  h2{font-size:30px;border-bottom:2px solid var(--border);padding-bottom:8px;color:var(--field)}
+  h3{font-size:22px;color:var(--barn);margin-top:32px}
+  h4{font-size:17px;color:var(--ink);margin-bottom:6px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px;margin:16px 0}
+  .card.example{border-left:4px solid var(--sky)}
+  .card.warn{border-left:4px solid var(--gold);background:#fbf0d8}
+  .card.good{border-left:4px solid var(--field);background:#eef6e6}
+  .card.bad{border-left:4px solid var(--barn);background:#fbeee8}
+  code{background:var(--panel2);padding:2px 6px;border-radius:4px;
+    font-family:"SF Mono",Consolas,monospace;font-size:0.92em;color:var(--barn)}
+  pre{background:var(--panel2);padding:14px;border-radius:8px;overflow-x:auto;border:1px solid var(--border)}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border)}
+  th{background:var(--panel2);color:var(--soil);font-weight:700}
+  tr:hover td{background:#f6efdd}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:16px 0}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center}
+  .stat .v{font-size:28px;font-weight:800;color:var(--field)}
+  .stat .l{color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:0.5px}
+  .flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;
+    margin:24px 0;padding:20px;background:var(--panel);border-radius:10px;border:1px solid var(--border)}
+  .node{background:var(--panel2);border:2px solid var(--gold);border-radius:8px;
+    padding:12px 16px;text-align:center;min-width:120px;font-weight:600;cursor:default;
+    transition:transform 0.15s,box-shadow 0.15s}
+  .node:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(167,115,12,0.22)}
+  .node.build{border-color:var(--sky)}
+  .node.harvest{border-color:var(--field)}
+  .node.reset{border-color:var(--amber)}
+  .node.wait{border-color:var(--soil)}
+  .arrow{color:var(--muted);font-size:22px;font-weight:700}
+  .calc{background:var(--panel2);border-left:3px solid var(--field);padding:12px 16px;
+    margin:10px 0;font-family:"SF Mono",Consolas,monospace;font-size:14px;border-radius:4px}
+  .pill{display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:700;letter-spacing:0.3px}
+  .pill.ltcg{background:#e0f0d6;color:#2f6a1f}
+  .pill.income{background:#f5e6c8;color:#8a5a12}
+  .pill.basis{background:#d9e8f3;color:#2c5f86}
+  .pill.gift{background:#efe1d2;color:#8a5230}
+  .pill.catch{background:#f6ddd6;color:#a6301f}
+  .stack{display:flex;flex-direction:column;gap:4px;margin:14px 0}
+  .stack .seg{padding:8px 12px;border-radius:6px;font-size:13px;font-weight:600;color:#fff;display:flex;justify-content:space-between}
+  .stack .sd{background:#9c8a63}
+  .stack .ord{background:var(--soil)}
+  .stack .zero{background:var(--field)}
+  .stack .fifteen{background:var(--barn)}
+  details{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin:10px 0}
+  summary{cursor:pointer;font-weight:700;color:var(--amber)}
+  .interactive{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px;margin:16px 0}
+  .interactive label{display:block;margin:8px 0 4px;color:var(--muted);font-size:13px}
+  .interactive input,.interactive select{background:var(--panel2);border:1px solid var(--border);color:var(--ink);
+    padding:8px 12px;border-radius:6px;width:160px;font-size:15px;font-family:inherit}
+  .interactive input:focus,.interactive select:focus{outline:none;border-color:var(--field)}
+  .out{margin-top:16px;padding:16px;background:#eef6e6;border-radius:8px;border:1px solid var(--field)}
+  .out .big{font-size:24px;font-weight:800;color:var(--field)}
+  .out .row{margin:6px 0}
+  .out .note{font-size:12.5px;color:var(--muted);margin-top:10px}
+  dl.glossary{margin:0}
+  dl.glossary dt{font-weight:700;color:var(--soil);margin-top:14px}
+  dl.glossary dd{margin:2px 0 0;color:var(--muted);font-size:14.5px}
+  footer{padding:32px 24px;text-align:center;color:var(--muted);font-size:13px;border-top:1px solid var(--border);margin-top:48px}
+  footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="sun"></div>
+  <h1>Tax-Gain Harvesting 🌾</h1>
+  <p>Deliberately realizing long-term gains inside the federal 0% bracket</p>
+</header>
+<div class="field-strip"></div>
+
+<nav>
+  <a href="#overview">Overview</a>
+  <a href="#bracket">The 0% Bracket</a>
+  <a href="#gain">Gain ≠ Proceeds</a>
+  <a href="#loop">The Harvest Loop</a>
+  <a href="#realize">1 · Realize</a>
+  <a href="#reinvest">2 · Reinvest</a>
+  <a href="#math">The Math</a>
+  <a href="#calc">Calculator</a>
+  <a href="#gifting">Gifting</a>
+  <a href="#catches">Catches</a>
+  <a href="#glossary">Glossary</a>
+</nav>
+
+<div class="wrap">
+
+<!-- ============================== OVERVIEW ============================== -->
+<section id="overview">
+<h2>What is Tax-Gain Harvesting?</h2>
+<p>
+  The federal government taxes <strong>long-term capital gains</strong> (investments held more
+  than a year) at a special <strong>0% rate</strong> — as long as your <strong>taxable
+  income</strong> stays below a threshold. <em>Tax-gain harvesting</em> is the deliberate act of
+  selling appreciated investments in a low-income year to <strong>realize</strong> those gains
+  while they land inside that 0% bracket, then (optionally) buying back in to raise your cost
+  basis. You pay $0 federal tax on the gain, and money that would've gone to taxes stays
+  invested and compounding.
+</p>
+
+<div class="grid">
+  <div class="stat"><div class="v">0%</div><div class="l">Federal rate in the sweet spot</div></div>
+  <div class="stat"><div class="v">&gt;1 yr</div><div class="l">Holding period to qualify</div></div>
+  <div class="stat"><div class="v">∞</div><div class="l">Repeat every low-income year</div></div>
+</div>
+
+<div class="card">
+  <h4>The core idea in one sentence</h4>
+  <p style="margin:0">
+    In a low-income year, sell appreciated <span class="pill ltcg">long-term</span> stock to
+    realize gains that fit inside the <strong>0% long-term capital-gains bracket</strong>, pay
+    $0 federal tax on them, then — if you like — <span class="pill basis">buy back in</span> to
+    reset your cost basis higher. Repeat in future low-income years.
+  </p>
+</div>
+
+<div class="card warn">
+  <h4>🌾 Why "harvesting"?</h4>
+  <p style="margin:0">You spend your working years <em>planting and growing</em> a portfolio.
+    Then, in the right season — a low-income year — you <em>harvest</em> the gains at 0%. Like a
+    farmer picking the ripe crop and replanting the field, you realize the gain, reset your
+    basis, and let it grow again.</p>
+</div>
+</section>
+
+<!-- ============================== THE 0% BRACKET ============================== -->
+<section id="bracket">
+<h2>The 0% Bracket — and the Standard Deduction Comes First</h2>
+<p>
+  The 0% threshold is based on <strong>taxable</strong> income — i.e. income <em>after</em> your
+  deduction. So you generally get the <strong>standard deduction first</strong>, and then the 0%
+  capital-gains bracket stacks on top of that. With essentially no other income, the two numbers
+  add together into a surprisingly large amount of gain you can realize tax-free.
+</p>
+
+<div class="card example">
+  <h4>2026 federal figures <span style="font-weight:400;color:var(--muted);font-size:13px">(IRS Rev. Proc. 2025-32)</span></h4>
+  <table>
+    <tr><th>Filing status</th><th>0% LTCG top (taxable income)</th><th>Standard deduction</th><th>≈ Gross LTCG at 0% with no other income</th></tr>
+    <tr><td>Single / Married filing separately</td><td>$49,450</td><td>$16,100</td><td><strong style="color:var(--field)">~$65,550</strong></td></tr>
+    <tr><td>Married filing jointly / surviving spouse</td><td>$98,900</td><td>$32,200</td><td><strong style="color:var(--field)">~$131,100</strong></td></tr>
+    <tr><td>Head of household</td><td>$66,200</td><td>$24,150</td><td><strong style="color:var(--field)">~$90,350</strong></td></tr>
+  </table>
+  <p style="margin-bottom:0">A married couple with basically no other taxable income could
+    realize roughly <strong>$131,100 of long-term profit</strong> at a 0% regular federal rate —
+    not "$98,900," because the $32,200 standard deduction comes first.</p>
+</div>
+
+<div class="card warn">
+  <h4>These numbers move every year</h4>
+  <p style="margin:0">The dollar limits are inflation-adjusted annually. Don't assume the 2026
+    figures are identical in 2027, 2028, and beyond — re-check each year before you harvest.</p>
+</div>
+</section>
+
+<!-- ============================== GAIN != PROCEEDS ============================== -->
+<section id="gain">
+<h2>Gain ≠ Proceeds (This Is the Whole Trick)</h2>
+<p>
+  The 0% bracket limits your <strong>capital gain</strong> — <em>not</em> the amount of stock you
+  sell. Your gain is only the <strong>profit</strong> above what you paid (your
+  <span class="pill basis">cost basis</span>). The original money you invested is a tax-free
+  return <em>of</em> capital.
+</p>
+
+<div class="calc">
+  capital_gain = sale_proceeds − cost_basis
+</div>
+
+<div class="card example">
+  <h4>Worked example — selling $200,000 of stock</h4>
+  <table>
+    <tr><th>Field</th><th>Value</th><th>Meaning</th></tr>
+    <tr><td>You paid (cost basis)</td><td>$100,000</td><td>What you originally invested</td></tr>
+    <tr><td>Current value</td><td>$200,000</td><td>What it's worth today</td></tr>
+    <tr><td>You sell</td><td>$200,000</td><td>The full position</td></tr>
+    <tr><td>Capital gain</td><td><strong style="color:var(--field)">$100,000</strong></td><td><code>200,000 − 100,000</code> — NOT $200,000</td></tr>
+  </table>
+  <p style="margin-bottom:0">You sold $200,000 of stock but only realized a <strong>$100,000</strong>
+    gain. The other $100,000 was your basis coming back to you, untaxed.</p>
+</div>
+
+<div class="card good">
+  <h4>The consequence</h4>
+  <p style="margin:0">Depending on your cost basis, you may be able to <strong>sell far more
+    stock</strong> than the gain limit. A married couple filling the ~$131,100 of 0% gain room
+    in 2026 might sell <em>several hundred thousand dollars</em> of actual stock, because only
+    the <em>profit portion</em> counts as the gain. That's what makes the strategy so powerful.</p>
+</div>
+</section>
+
+<!-- ============================== THE HARVEST LOOP ============================== -->
+<section id="loop">
+<h2>The Harvest Loop</h2>
+<p>The retirement strategy is a repeatable seasonal cycle. Every harvest year looks like this:</p>
+
+<div class="flow">
+  <div class="node build">🌱 Build portfolio<br/><small>working years</small></div>
+  <div class="arrow">→</div>
+  <div class="node wait">🏡 Retire<br/><small>income drops</small></div>
+  <div class="arrow">→</div>
+  <div class="node">📅 Low-income year</div>
+  <div class="arrow">→</div>
+  <div class="node harvest">🧺 Harvest LTCG<br/><small>at 0%</small></div>
+</div>
+<div class="flow">
+  <div class="node harvest">🧺 Harvest LTCG<br/><small>at 0%</small></div>
+  <div class="arrow">→</div>
+  <div class="node reset">🔁 Reinvest<br/><small>reset basis higher</small></div>
+  <div class="arrow">↺</div>
+  <div class="node">📅 Next low-income year</div>
+  <div class="arrow">→</div>
+  <div class="node harvest">🧺 Harvest again</div>
+</div>
+
+<div class="card">
+  <h4>Why the "gap years" are gold</h4>
+  <p style="margin:0">The years <em>after</em> you stop earning a salary but <em>before</em>
+    large pensions, Social Security, and required minimum distributions (RMDs) begin are often
+    your lowest-income years ever. That empty space under the 0% ceiling is prime harvest
+    ground. A couple who retires near year-end can start the next calendar year with little or
+    no earned income and harvest aggressively.</p>
+</div>
+</section>
+
+<!-- ============================== STEP 1: REALIZE ============================== -->
+<section id="realize">
+<h2>Step 1 — Realize the Gain</h2>
+<p>
+  In your low-income year, sell appreciated shares you've held <strong>more than a year</strong>,
+  realizing an amount of gain that fits inside your 0% room. The sale is a taxable event, but if
+  the gain lands in the 0% bracket, the regular federal tax on it is <strong>$0</strong>.
+</p>
+
+<div class="card example">
+  <h4>Worked example — a $130,000 harvest (married filing jointly, 2026)</h4>
+  <table>
+    <tr><th>Field</th><th>Value</th><th>Meaning</th></tr>
+    <tr><td>Original cost</td><td>$100,000</td><td>Your cost basis</td></tr>
+    <tr><td>Current value</td><td>$230,000</td><td>Long-term holding</td></tr>
+    <tr><td>Unrealized gain</td><td>$130,000</td><td><code>230,000 − 100,000</code></td></tr>
+    <tr><td>Other taxable income</td><td>$0</td><td>A true low-income year</td></tr>
+    <tr><td>2026 MFJ 0% gross room</td><td>~$131,100</td><td>$98,900 + $32,200</td></tr>
+    <tr><td>Federal tax on the gain</td><td><strong style="color:var(--field)">$0</strong></td><td>$130,000 sits under ~$131,100</td></tr>
+  </table>
+  <p style="margin-bottom:0">You just realized a <strong>$130,000</strong> long-term gain and
+    owed <strong>$0</strong> regular federal income tax on it.</p>
+</div>
+</section>
+
+<!-- ============================== STEP 2: REINVEST ============================== -->
+<section id="reinvest">
+<h2>Step 2 — Reinvest &amp; Reset Your Basis</h2>
+<p>
+  Here's the part that makes harvesting different from simply spending the money: you don't have
+  to spend it. You can <strong>buy the investment right back</strong>. Your new cost basis
+  becomes roughly today's price — so you've converted previously unrealized appreciation into
+  fresh basis at a <strong>0% tax cost</strong>.
+</p>
+
+<div class="card good">
+  <h4>Continuing the example</h4>
+  <div class="calc">
+    old_basis = $100,000<br/>
+    harvested_gain = $130,000 (taxed at 0%)<br/>
+    rebuy at current value → <strong>new_basis ≈ $230,000</strong>
+  </div>
+  <p>You turned $130,000 of unrealized appreciation into additional cost basis while paying
+    $0 federal capital-gains tax. If the stock later keeps climbing, you've permanently removed
+    that first $130,000 from any future taxable gain. Do it again in the next low-income year.</p>
+</div>
+
+<div class="card">
+  <h4>🌾 The wash-sale rule is generally <em>not</em> your problem here</h4>
+  <p style="margin:0">The wash-sale rule disallows a <strong>loss</strong> when you rebuy a
+    substantially identical security within 30 days. When you're intentionally realizing a
+    <strong>gain</strong>, there's no loss to disallow — so you can typically sell and rebuy
+    immediately. (This is the opposite of tax-<em>loss</em> harvesting, where the 30-day rule
+    forces you to wait or swap into something different.)</p>
+</div>
+
+<div class="card warn">
+  <h4>Why this means more money over time</h4>
+  <p style="margin:0">It's not magic growth — the investment doesn't earn more. It's that the
+    capital you <em>didn't</em> hand over in taxes stays invested and keeps compounding. If you'd
+    instead sold a big appreciated position during a high-income year, some of that gain could be
+    taxed at <span class="pill catch">15%</span>, <span class="pill catch">20%</span>, plus the
+    <span class="pill catch">3.8% NIIT</span> on top. Harvesting slices at 0% keep more of your
+    capital working for you.</p>
+</div>
+</section>
+
+<!-- ============================== THE MATH ============================== -->
+<section id="math">
+<h2>The Math That Matters</h2>
+
+<h3>Stacking order: ordinary income fills the bracket first</h3>
+<p>
+  Think of your income as water filling a tank from the bottom. Your deduction carves out the
+  tax-free bottom. Then <strong>ordinary income</strong> (wages, interest, pension, taxable
+  withdrawals, Roth conversions) fills the brackets first. Your long-term gains and qualified
+  dividends <strong>stack on top</strong> — and only the portion that sits below the 0% ceiling
+  gets the 0% rate.
+</p>
+
+<div class="stack">
+  <div class="seg sd"><span>Standard deduction (tax-free)</span><span>MFJ $32,200</span></div>
+  <div class="seg ord"><span>Ordinary income fills brackets first</span><span>varies</span></div>
+  <div class="seg zero"><span>Long-term gains &amp; qualified dividends at 0%</span><span>up to $98,900 taxable</span></div>
+  <div class="seg fifteen"><span>Gains above the line → 15% (then 20% + 3.8% NIIT)</span><span>the overflow</span></div>
+</div>
+
+<h3>How much gain fits at 0%?</h3>
+<p>A clean way to estimate your gross long-term gain room at 0% in a year:</p>
+<div class="calc">
+  room_at_0% = (zero_bracket_top + standard_deduction) − other_ordinary_income − qualified_dividends<br/>
+  <span style="color:var(--muted)">(floored at $0)</span>
+</div>
+<p>With zero other income, that's just <code>zero_bracket_top + standard_deduction</code> —
+  e.g. MFJ 2026: <code>$98,900 + $32,200 = $131,100</code>. Every dollar of ordinary income or
+  qualified dividends you have that year shrinks the room dollar-for-dollar.</p>
+
+<h3>The rates you're avoiding</h3>
+<div class="grid">
+  <div class="stat"><div class="v">0%</div><div class="l">Harvested in the sweet spot</div></div>
+  <div class="stat"><div class="v">15%</div><div class="l">Typical LTCG bracket above it</div></div>
+  <div class="stat"><div class="v">20%</div><div class="l">Top LTCG bracket</div></div>
+  <div class="stat"><div class="v">+3.8%</div><div class="l">NIIT on high earners, layered on</div></div>
+</div>
+<p style="color:var(--muted);font-size:14px">Realizing a slice of gain at 0% instead of 15–23.8%
+  during a high-income year is a permanent tax saving on that slice — and it compounds, because
+  the saved tax stays invested.</p>
+</section>
+
+<!-- ============================== CALCULATOR ============================== -->
+<section id="calc">
+<h2>Interactive Harvest Calculator</h2>
+<p>Estimate how much long-term gain you can harvest at 0% this year — and roughly how much stock
+  that lets you sell. <em>Federal only, simplified; see the notes.</em></p>
+
+<div class="interactive">
+  <div style="display:flex;flex-wrap:wrap;gap:20px">
+    <div>
+      <label>Filing status</label>
+      <select id="status">
+        <option value="single">Single</option>
+        <option value="mfj" selected>Married filing jointly</option>
+        <option value="hoh">Head of household</option>
+        <option value="mfs">Married filing separately</option>
+      </select>
+    </div>
+    <div><label>Other ordinary income ($/yr)</label><input id="ord" type="number" value="0" step="1000" min="0" /></div>
+    <div><label>Qualified dividends ($/yr)</label><input id="qd" type="number" value="0" step="500" min="0" /></div>
+    <div><label>Lot cost basis ($)</label><input id="basis" type="number" value="100000" step="1000" min="0" /></div>
+    <div><label>Lot current value ($)</label><input id="value" type="number" value="230000" step="1000" min="0" /></div>
+  </div>
+  <div class="out" id="out"></div>
+</div>
+
+<script>
+const TABLE = {
+  single:{z:49450, sd:16100, label:"Single"},
+  mfj:   {z:98900, sd:32200, label:"Married filing jointly"},
+  hoh:   {z:66200, sd:24150, label:"Head of household"},
+  mfs:   {z:49450, sd:16100, label:"Married filing separately"}
+};
+function money(n){return "$"+Math.round(n).toLocaleString()}
+function recalc(){
+  const t = TABLE[document.getElementById('status').value];
+  const ord = Math.max(0, +document.getElementById('ord').value || 0);
+  const qd  = Math.max(0, +document.getElementById('qd').value || 0);
+  const basis = Math.max(0, +document.getElementById('basis').value || 0);
+  const value = Math.max(0, +document.getElementById('value').value || 0);
+
+  const room = Math.max(0, (t.z + t.sd) - ord - qd);   // gross LTCG that can be realized at 0%
+  const unreal = Math.max(0, value - basis);
+  const gainRatio = value > 0 ? unreal / value : 0;    // gain per $1 of stock sold
+
+  let html = `<div class="row">Standard deduction (2026, ${t.label}): <strong>${money(t.sd)}</strong></div>`;
+  html += `<div class="row">Long-term gain you can harvest at <strong>0%</strong> this year:</div>`;
+  html += `<div class="big">${money(room)}</div>`;
+
+  if(room === 0){
+    html += `<div class="row note">Your 0% space is fully consumed: ${money(ord+qd)} of other income
+      meets or exceeds the ${money(t.z+t.sd)} ceiling (${money(t.z)} bracket + ${money(t.sd)} deduction).
+      No room to harvest at 0% this year.</div>`;
+  } else if(unreal === 0){
+    html += `<div class="row note">This lot has no unrealized gain (value ≤ basis), so there's nothing to harvest from it.</div>`;
+  } else {
+    const sellToFill = Math.min(value, room / gainRatio);
+    const gainOnWhole = unreal;
+    const at0 = Math.min(gainOnWhole, room);
+    const overflow = Math.max(0, gainOnWhole - room);
+    html += `<div class="row">This lot: ${money(value)} value − ${money(basis)} basis =
+      <strong>${money(unreal)}</strong> unrealized gain (${(gainRatio*100).toFixed(0)}% of value is gain).</div>`;
+    html += `<div class="row">👉 Sell about <strong>${money(sellToFill)}</strong> of this stock to realize
+      ~<strong>${money(Math.min(room, unreal))}</strong> of long-term gain at <strong>$0</strong> federal tax.</div>`;
+    if(overflow > 0){
+      html += `<div class="row">Selling the entire ${money(value)} lot would realize ${money(gainOnWhole)} of gain:
+        ~${money(at0)} at 0% and ~<strong>${money(overflow)}</strong> spilling into the 15%+ bracket.</div>`;
+    }
+    html += `<div class="row">If you rebuy the shares you sell, your new cost basis resets to roughly today's price —
+      removing that harvested gain from future taxable gain.</div>`;
+  }
+  html += `<div class="note">⚠️ Simplified &amp; federal only. Assumes all gains are long-term (held &gt; 1 yr),
+    the standard deduction, and ignores itemizing, AMT, phaseouts, and other preferential-income nuances.
+    The gain still raises your AGI/MAGI (affecting ACA subsidies, Social Security taxation, and Medicare IRMAA)
+    and says nothing about state tax. Not tax advice.</div>`;
+  document.getElementById('out').innerHTML = html;
+}
+['status','ord','qd','basis','value'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',recalc);
+  document.getElementById(id).addEventListener('change',recalc);
+});
+recalc();
+</script>
+</section>
+
+<!-- ============================== GIFTING ============================== -->
+<section id="gifting">
+<h2>The Gifting Play 🎁</h2>
+<p>
+  There's a related move. Say you own highly appreciated stock and genuinely want to give some to,
+  say, your adult nephew. Instead of selling it yourself (and realizing the gain in <em>your</em>
+  bracket), you can gift the <strong>stock</strong>. Receiving a legitimate gift generally isn't
+  taxable income to the recipient — but the gain doesn't vanish.
+</p>
+
+<div class="card example">
+  <h4>Carryover basis — the key mechanic</h4>
+  <p>With appreciated <em>gifted</em> stock, the recipient generally takes <strong>your cost
+    basis</strong> (and tacks on your holding period). The embedded gain travels with the shares.</p>
+  <table>
+    <tr><th>Field</th><th>Value</th></tr>
+    <tr><td>Your cost basis</td><td>$5,000</td></tr>
+    <tr><td>Value when gifted</td><td>$35,000</td></tr>
+    <tr><td>Nephew's basis (carryover)</td><td>~$5,000</td></tr>
+    <tr><td>He sells for $35,000 → his gain</td><td><strong>~$30,000</strong></td></tr>
+  </table>
+  <p style="margin-bottom:0">Now <strong>his</strong> tax situation governs. If he's an
+    independent adult with little other income and the holding is long-term, that ~$30,000 gain
+    could fall inside <strong>his</strong> 0% bracket.</p>
+</div>
+
+<div class="card bad">
+  <h4>⚠️ The "kiddie tax" trap</h4>
+  <p style="margin:0">Don't assume a young person automatically gets their own 0% bracket. The
+    kiddie tax can tax a child's unearned income at the parents' rates. It isn't simply "under
+    18" — it can apply to someone who is:</p>
+  <ul style="margin:8px 0 0">
+    <li>Under 18; <strong>or</strong></li>
+    <li>Age 18 and doesn't provide more than half their own support with earned income; <strong>or</strong></li>
+    <li>A full-time student age 19–23 who doesn't provide more than half their own support with earned income.</li>
+  </ul>
+  <p style="margin:8px 0 0">Gifting appreciated stock to a 20-year-old college student and assuming
+    they'll use their own 0% bracket can backfire.</p>
+</div>
+
+<div class="card">
+  <h4>Gift-tax basics (2026)</h4>
+  <ul style="margin:0">
+    <li><strong>Annual exclusion:</strong> one person can generally give another
+      <strong>$19,000</strong> per year with no reporting. A married couple can give the same
+      person <strong>$38,000</strong> using both spouses' exclusions.</li>
+    <li><strong>That's not a legal maximum.</strong> You <em>can</em> give more. Exceeding the
+      annual exclusion generally means the donor files <strong>Form 709</strong> and dips into
+      their lifetime exemption — it rarely means anyone actually owes gift tax.</li>
+    <li><strong>Lifetime exemption:</strong> <strong>$15,000,000</strong> per person in 2026. A
+      $50,000 gift doesn't make anyone suddenly owe gift tax.</li>
+    <li><strong>Gift tax is the donor's issue</strong>, not the recipient's.</li>
+  </ul>
+</div>
+
+<div class="card warn">
+  <h4>It has to be a real gift</h4>
+  <p style="margin:0">Once you give someone stock, it's genuinely <strong>their</strong> property.
+    You can't "gift" shares under a wink-wink agreement that they'll sell and funnel the cash back
+    to you just to borrow their lower bracket. A sham gift isn't a gift.</p>
+</div>
+</section>
+
+<!-- ============================== CATCHES ============================== -->
+<section id="catches">
+<h2>Catches &amp; Caveats</h2>
+
+<div class="card bad">
+  <h4>Long-term only</h4>
+  <p>The 0% rate is for <strong>long-term</strong> gains — generally investments held
+    <strong>more than one year</strong>. <span class="pill catch">Short-term</span> gains are
+    taxed like ordinary income, at your regular rate.</p>
+</div>
+
+<div class="card bad">
+  <h4>Your other income eats the bracket</h4>
+  <p>Salary, interest, pension income, taxable retirement withdrawals, Roth conversions, and the
+    like consume some or all of your 0% room first. You can't earn $300,000 from a job and then
+    stack another $98,900 of tax-free gains on top.</p>
+</div>
+
+<div class="card bad">
+  <h4>Qualified dividends count too</h4>
+  <p>Qualified dividends generally share these same preferential brackets, so they also consume
+    your 0% space before your harvested gains get there.</p>
+</div>
+
+<div class="card warn">
+  <h4>The gain still counts as income for <em>other</em> purposes</h4>
+  <p style="margin:0">Even at a 0% federal <em>rate</em>, the realized gain raises your
+    <strong>AGI/MAGI</strong>. That can shrink ACA health-insurance subsidies, increase how much
+    of your Social Security is taxable, and (years later) push up Medicare <strong>IRMAA</strong>
+    surcharges. Harvest with your whole tax picture in view.</p>
+</div>
+
+<div class="card warn">
+  <h4>State taxes are separate</h4>
+  <p style="margin:0">A 0% <em>federal</em> rate does not mean your <em>state</em> charges nothing.
+    Some states tax capital gains as ordinary income. Check your state's rules.</p>
+</div>
+
+<div class="card warn">
+  <h4>The limits change yearly</h4>
+  <p style="margin:0">The dollar thresholds are inflation-adjusted every year. Re-verify the
+    current figures before each harvest — don't hard-code 2026 into your 2029 plan.</p>
+</div>
+
+<div class="card good">
+  <h4>The honest bottom line</h4>
+  <p style="margin:0">The 0% federal long-term capital-gains bracket is absolutely real, and for
+    a retired couple with little other income the relevant number in 2026 isn't "$98,900 of
+    stock" — it's roughly <strong>$131,100 of long-term profit</strong>, which (depending on
+    basis) can mean selling several hundred thousand dollars of stock. Run your actual numbers
+    and talk to a professional before you act.</p>
+</div>
+</section>
+
+<!-- ============================== GLOSSARY ============================== -->
+<section id="glossary">
+<h2>Glossary</h2>
+<dl class="glossary">
+  <dt>Long-term capital gain (LTCG)</dt>
+  <dd>Profit on an asset held <strong>more than one year</strong>. Eligible for the preferential 0% / 15% / 20% rates.</dd>
+
+  <dt>Short-term capital gain (STCG)</dt>
+  <dd>Profit on an asset held one year or less. Taxed at ordinary income rates — not eligible for the 0% bracket.</dd>
+
+  <dt>Cost basis</dt>
+  <dd>What you paid for an investment (plus adjustments). Your gain is sale price minus basis.</dd>
+
+  <dt>Proceeds</dt>
+  <dd>The total dollars you receive from a sale — not the same as your gain.</dd>
+
+  <dt>Realized vs. unrealized gain</dt>
+  <dd><strong>Unrealized</strong> = on paper, you still hold it. <strong>Realized</strong> = you sold and the gain is now a taxable event.</dd>
+
+  <dt>Taxable income</dt>
+  <dd>Your income after deductions. The 0% capital-gains thresholds are measured against this number.</dd>
+
+  <dt>Standard deduction</dt>
+  <dd>A flat amount that reduces taxable income (2026: $16,100 single, $32,200 MFJ, $24,150 HoH). It applies before the 0% bracket, which is why your effective tax-free gain room is larger than the bracket alone.</dd>
+
+  <dt>AGI / MAGI</dt>
+  <dd>Adjusted Gross Income and Modified AGI — summary income figures used to determine eligibility for credits, ACA subsidies, Social Security taxation, and Medicare IRMAA. A harvested gain raises them even if taxed at 0%.</dd>
+
+  <dt>Qualified dividends</dt>
+  <dd>Dividends taxed at the same preferential rates as long-term gains — so they consume 0% bracket space too.</dd>
+
+  <dt>NIIT (Net Investment Income Tax)</dt>
+  <dd>An extra <strong>3.8%</strong> tax on investment income for higher earners, layered on top of the regular capital-gains rate.</dd>
+
+  <dt>Wash-sale rule</dt>
+  <dd>Disallows a <strong>loss</strong> if you rebuy a substantially identical security within 30 days. Generally doesn't block gain harvesting, because there's no loss to disallow.</dd>
+
+  <dt>Carryover (gift) basis</dt>
+  <dd>When you gift appreciated stock, the recipient generally inherits <strong>your</strong> cost basis and holding period — the embedded gain goes with it.</dd>
+
+  <dt>Step-up in basis</dt>
+  <dd>By contrast, assets passed at <strong>death</strong> generally get basis reset to date-of-death value — wiping out the embedded gain. (Gifts during life do <em>not</em> get this.)</dd>
+
+  <dt>Holding period</dt>
+  <dd>How long you've owned an asset; more than a year makes a gain long-term. Gifts generally tack on the donor's holding period.</dd>
+
+  <dt>Kiddie tax</dt>
+  <dd>Rules that can tax a child's/young student's unearned income at the parents' rates — can apply to certain people under 18, 18, or full-time students 19–23 who don't support themselves with earned income.</dd>
+
+  <dt>Gift tax annual exclusion</dt>
+  <dd>The amount you can give one person per year with no gift-tax reporting (2026: $19,000 per giver; $38,000 for a couple splitting).</dd>
+
+  <dt>Lifetime exemption</dt>
+  <dd>The cumulative amount you can give/bequeath above annual exclusions before gift/estate tax applies (2026: $15,000,000 per person).</dd>
+
+  <dt>Form 709</dt>
+  <dd>The federal gift-tax return a donor files when a gift to someone exceeds the annual exclusion. Usually just tracks use of the lifetime exemption — not a tax bill.</dd>
+
+  <dt>IRMAA</dt>
+  <dd>Income-Related Monthly Adjustment Amount — Medicare surcharges triggered when income (MAGI) crosses thresholds, assessed on a ~2-year lookback.</dd>
+
+  <dt>Tax-gain harvesting</dt>
+  <dd>Deliberately realizing long-term gains in the 0% bracket (often to reset basis). The subject of this guide.</dd>
+
+  <dt>Tax-loss harvesting</dt>
+  <dd>The mirror strategy: realizing <em>losses</em> to offset gains/income. Subject to the wash-sale rule.</dd>
+</dl>
+</section>
+
+</div>
+
+<footer>
+  🌾 Tax-Gain Harvesting — educational only, not tax advice ·
+  Source on <a href="https://github.com/jeremiahjordanisaacson/tax-gain-harvesting">GitHub</a>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,42 @@
+# --- Safety net: never commit personal tax or financial data ---
+*.xlsx
+*.xls
+*.xlsm
+*.csv
+*.ods
+*.tsv
+*.pdf
+
+# Tax forms & brokerage exports (keep private)
+*1099*
+*8949*
+*brokerage*
+*cost-basis*
+*costbasis*
+*gains*.csv
+*positions*
+*holdings*
+*realized*
+
+# --- Secrets ---
+.env
+.env.*
+*.pem
+*.key
+.copilot_token
+.copilot_session
+
+# --- Python noise (in case any analysis script lands here) ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# --- Editor / OS noise ---
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini

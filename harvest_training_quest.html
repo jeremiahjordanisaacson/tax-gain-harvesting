@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tax-Gain Harvesting — Training Quest</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#f1e8d2;--bg2:#efe6cf;--amber:#b9810f;--green:#3f7f2c;--barn:#a6401f;--soil:#8a6a3f;--gold:#d79a1e;--text:#3a2f21;--text-muted:#8a7757;--border:#d8c59c;--panel-w:460px;--top-bar:52px}
+  html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:linear-gradient(135deg,#efe6cf 0%,var(--bg) 100%);color:var(--text)}
+  .top-bar{position:fixed;top:0;left:0;right:0;height:var(--top-bar);background:rgba(241,232,210,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;z-index:100}
+  .top-bar .title{font-size:15px;font-weight:700;white-space:nowrap}.top-bar .title span{color:var(--amber)}
+  .progress-wrap{flex:1;max-width:420px;margin:0 auto;display:flex;align-items:center;gap:10px}
+  .progress-track{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--green));border-radius:4px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+  .progress-label{font-size:13px;color:var(--text-muted);min-width:90px;text-align:right}
+  .btn-reset{background:transparent;border:1px solid var(--border);color:var(--text-muted);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;white-space:nowrap;transition:all .2s}.btn-reset:hover{border-color:var(--barn);color:var(--barn)}
+  .quest-map{position:fixed;top:var(--top-bar);left:0;right:0;bottom:0;overflow:hidden;background:repeating-linear-gradient(0deg,rgba(138,106,63,.05) 0 1px,transparent 1px 46px)}
+  .quest-map svg.path-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .phase-label{position:absolute;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--soil);opacity:.6;pointer-events:none}
+  .phase-label.p1{top:82px;left:1%}.phase-label.p2{top:82px;left:26.0%}.phase-label.p3{top:82px;left:51.0%}.phase-label.p4{top:82px;left:67.7%}
+  .phase-divider{position:absolute;top:var(--top-bar);bottom:0;width:1px;background:linear-gradient(to bottom,transparent,var(--border) 15%,var(--border) 85%,transparent);opacity:.7;pointer-events:none}
+  .phase-divider.d1{left:25.0%}.phase-divider.d2{left:50.0%}.phase-divider.d3{left:66.7%}
+  .node{position:absolute;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .35s cubic-bezier(.4,0,.2,1);z-index:10;transform:translate(-50%,-50%)}
+  .node .ring{position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--border);transition:all .35s}
+  .node .inner{width:100%;height:100%;border-radius:50%;background:#faf4e4;display:flex;align-items:center;justify-content:center;font-size:22px;position:relative;z-index:1;transition:all .35s;border:2px solid var(--border)}
+  .node.active .ring{border-color:var(--amber);box-shadow:0 0 20px rgba(185,129,15,.35);animation:pulse-ring 2s infinite}
+  .node.active .inner{border-color:var(--amber);background:rgba(215,154,30,.14);transform:scale(1.12)}.node.active .lock{display:none}
+  .node.complete .ring{border-color:var(--green);box-shadow:0 0 12px rgba(63,127,44,.28)}
+  .node.complete .inner{border-color:var(--green);background:rgba(63,127,44,.16)}.node.complete .lock{display:none}
+  .node:hover{transform:translate(-50%,-50%) scale(1.1)}
+  .node .label{position:absolute;top:calc(100% + 10px);white-space:nowrap;font-size:11px;font-weight:700;color:var(--text-muted);text-align:center;pointer-events:none;transition:color .3s}
+  .node.active .label{color:var(--amber)}.node.complete .label{color:var(--green)}
+  @keyframes pulse-ring{0%,100%{box-shadow:0 0 20px rgba(185,129,15,.25)}50%{box-shadow:0 0 32px rgba(185,129,15,.5)}}
+  .check-icon{display:none}.node.complete .check-icon{display:block}.node.complete .emoji{display:none}
+  .overlay{position:fixed;inset:0;background:rgba(58,47,33,.2);z-index:200;opacity:0;pointer-events:none;transition:opacity .3s}.overlay.open{opacity:1;pointer-events:auto}
+  .panel{position:fixed;top:0;right:0;bottom:0;width:var(--panel-w);max-width:92vw;background:#faf4e4;border-left:1px solid var(--border);z-index:210;transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow-y:auto;box-shadow:-4px 0 24px rgba(58,47,33,.1)}.panel.open{transform:translateX(0)}
+  .panel-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px}
+  .panel-header .emoji-big{font-size:32px;line-height:1}.panel-header .meta{flex:1}.panel-header .meta h2{font-size:18px;font-weight:800;margin-bottom:4px}.panel-header .meta .time{font-size:12px;color:var(--text-muted)}
+  .panel-close{background:none;border:none;color:var(--text-muted);font-size:22px;cursor:pointer;padding:4px;line-height:1}.panel-close:hover{color:var(--text)}
+  .panel-body{flex:1;padding:20px 24px;display:flex;flex-direction:column;gap:16px}.panel-body .desc{font-size:14px;line-height:1.55;color:var(--text)}
+  .copy-block{position:relative;background:#eee2c6;border:1px solid var(--border);border-radius:8px;padding:12px 44px 12px 14px;font-family:'Cascadia Code','Fira Code',monospace;font-size:12.5px;line-height:1.5;color:var(--text);white-space:pre-wrap;word-break:break-word}
+  .copy-btn{position:absolute;top:8px;right:8px;background:#e2d3ad;border:none;color:var(--text-muted);width:30px;height:30px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}.copy-btn:hover{background:var(--amber);color:#fff}.copy-btn.copied{background:var(--green);color:#fff}
+  .toggle-done{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:8px;border:2px solid var(--border);background:transparent;cursor:pointer;font-size:14px;font-weight:700;color:var(--text);transition:all .25s;width:100%}
+  .toggle-done .dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;transition:all .25s;flex-shrink:0}
+  .toggle-done.checked{border-color:var(--green);background:rgba(63,127,44,.1)}.toggle-done.checked .dot{background:var(--green);border-color:var(--green)}
+  .substeps{list-style:none;padding:0;display:flex;flex-direction:column;gap:6px}
+  .substeps li{font-size:13px;color:var(--text-muted);padding-left:20px;position:relative;line-height:1.5}
+  .substeps li::before{content:'🌾';position:absolute;left:0;top:1px;font-size:11px}
+  .stuck-toggle{background:none;border:none;color:var(--barn);font-size:13px;cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:6px}.stuck-toggle:hover{text-decoration:underline}
+  .stuck-content{max-height:0;overflow:hidden;transition:max-height .3s;font-size:13px;color:var(--text-muted);line-height:1.6}.stuck-content.open{max-height:500px}.stuck-content p{margin-top:8px}
+  .copy-group{display:flex;flex-direction:column;gap:8px}
+  .particle{position:fixed;width:8px;height:8px;border-radius:50%;pointer-events:none;z-index:999}
+  .confetti{position:fixed;width:10px;height:16px;pointer-events:none;z-index:999;border-radius:2px}
+  .rocket-anim{position:fixed;font-size:40px;z-index:999;pointer-events:none}
+  .banner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:rgba(250,244,228,.98);border:2px solid var(--green);border-radius:16px;padding:32px 56px;text-align:center;z-index:999;transition:transform .5s cubic-bezier(.175,.885,.32,1.275);box-shadow:0 12px 48px rgba(58,47,33,.18)}.banner.show{transform:translate(-50%,-50%) scale(1)}.banner h1{font-size:28px;margin-bottom:8px;color:var(--soil)}.banner p{color:var(--text-muted);font-size:15px}
+  .panel::-webkit-scrollbar{width:6px}.panel::-webkit-scrollbar-track{background:transparent}.panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  .credit{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-muted);opacity:.7;pointer-events:none;letter-spacing:.3px;z-index:5}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <div class="title"><span>🌾 Tax-Gain Harvesting</span> — Training Quest</div>
+  <div class="progress-wrap"><div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div><div class="progress-label" id="progressLabel">0 of 12</div></div>
+  <button class="btn-reset" onclick="resetProgress()">Reset Progress</button>
+</div>
+<div class="phase-label p1">🌱 Plant the Seed</div>
+<div class="phase-label p2">📖 Know the Field</div>
+<div class="phase-label p3">🌾 Work the Harvest</div>
+<div class="phase-label p4">🏆 Master the Season</div>
+<div class="phase-divider d1"></div><div class="phase-divider d2"></div><div class="phase-divider d3"></div>
+<div class="quest-map" id="questMap"><svg class="path-svg" id="pathSvg" preserveAspectRatio="none"></svg></div>
+<div class="overlay" id="overlay" onclick="closePanel()"></div>
+<div class="panel" id="panel"><div class="panel-header"><div class="emoji-big" id="panelEmoji"></div><div class="meta"><h2 id="panelTitle"></h2><div class="time" id="panelTime"></div></div><button class="panel-close" onclick="closePanel()">✕</button></div><div class="panel-body" id="panelBody"></div></div>
+<div class="banner" id="banner"><h1>🏆 Harvest Complete!</h1><p>You've mastered tax-gain harvesting.</p></div>
+<div class="credit">Tax-Gain Harvesting — Training Quest · Educational only, not tax advice</div>
+<script>
+const CHECKPOINTS = [
+  {
+    "id":"step-1","phase":1,"emoji":"🌾","title":"Grasp the core idea","time":"3 min",
+    "desc":"The federal government has a 0% tax bracket for LONG-TERM capital gains. Tax-gain harvesting is deliberately selling appreciated investments in a low-income year to realize gains inside that 0% bracket — paying $0 federal tax — then optionally buying back in to reset your cost basis higher. Internalize this one sentence before anything else.",
+    "toggle":"I can explain harvesting in one sentence ✓",
+    "copies":[{"label":"The strategy in one sentence","text":"In a low-income year, realize long-term capital gains that fit inside the 0% bracket, pay $0 federal tax, then optionally rebuy to reset your cost basis higher."}],
+    "substeps":["Read the one-sentence definition out loud","Notice it only works for LONG-TERM gains (held > 1 year)","Notice the magic year is a LOW-INCOME year","See that rebuying is optional — you need not spend the money"],
+    "learn":"What tax-gain harvesting is, why it needs a low-income year, and what 0% actually means",
+    "stuck":"Confused by 'realize'? Realizing a gain just means SELLING so the paper profit becomes an actual, reportable transaction. If the gain is long-term and fits in the 0% bracket, the regular federal tax on it is zero."
+  },
+  {
+    "id":"step-2","phase":1,"emoji":"✂️","title":"Gain is NOT proceeds","time":"4 min",
+    "desc":"The 0% bracket limits your GAIN, not the amount of stock you sell. Your gain is only the profit above your cost basis. The original money you invested comes back untaxed. This single distinction is what makes the strategy so powerful.",
+    "toggle":"I can separate gain from proceeds ✓",
+    "copies":[{"label":"Gain vs. proceeds","text":"capital_gain = sale_proceeds - cost_basis. Sell $200,000 that cost $100,000 and the gain is only $100,000 - the other $100,000 is your basis coming back."}],
+    "substeps":["Write the formula: gain = proceeds - cost basis","Do the example: $200,000 sale, $100,000 basis -> $100,000 gain","Realize you could SELL far more stock than the gain limit","Lower basis = bigger gain per dollar sold; higher basis = smaller gain"],
+    "learn":"Cost basis, proceeds, and why you can sell more stock than your gain limit",
+    "stuck":"If gain and proceeds feel the same: imagine buying a $100k thing and selling it for $100k. Proceeds are $100k, but your gain is ZERO. Only the amount ABOVE what you paid is a taxable gain."
+  },
+  {
+    "id":"step-3","phase":1,"emoji":"📏","title":"Stack the two numbers","time":"5 min",
+    "desc":"The 0% threshold is measured against TAXABLE income — income after your deduction. So the standard deduction comes FIRST, and the 0% capital-gains bracket stacks on top of it. Add the two together and your tax-free gain room is bigger than the bracket alone.",
+    "toggle":"I can stack the deduction + bracket ✓",
+    "copies":[{"label":"The two numbers that stack","text":"0% room (no other income) = zero_bracket_top + standard_deduction. MFJ 2026 = 98,900 + 32,200 = 131,100."}],
+    "substeps":["Note the bracket is on TAXABLE income (after deductions)","Add standard deduction first, THEN the 0% bracket","MFJ 2026: 32,200 + 98,900 = 131,100 of gross gain at 0%","See why the headline number beats the bare bracket"],
+    "learn":"Why 'taxable income' + 'standard deduction first' makes the 0% room larger than the bracket",
+    "stuck":"Why add the deduction? Because the first chunk of income is wiped out by the standard deduction before the brackets even start. That tax-free chunk effectively raises the ceiling on how much gain you can stack underneath the 0% line."
+  },
+  {
+    "id":"step-4","phase":2,"emoji":"🔢","title":"Memorize the 2026 headroom","time":"6 min",
+    "desc":"Know the real 2026 numbers cold. With essentially no other income, the gross long-term gain you can realize at 0% is the bracket top plus the standard deduction, by filing status.",
+    "toggle":"I know the 2026 headroom by status ✓",
+    "copies":[
+      {"label":"2026 gross LTCG at 0% (no other income)","text":"Single ~65,550 | MFJ ~131,100 | HoH ~90,350 | MFS ~65,550"},
+      {"label":"The raw brackets + deductions","text":"0% top (taxable): Single 49,450 / MFJ 98,900 / HoH 66,200. Standard deduction: Single 16,100 / MFJ 32,200 / HoH 24,150."}
+    ],
+    "substeps":["Single: 49,450 + 16,100 = ~65,550","MFJ: 98,900 + 32,200 = ~131,100","HoH: 66,200 + 24,150 = ~90,350","Remember: these inflate every year - re-check annually"],
+    "learn":"The 2026 0% thresholds, standard deductions, and the combined headroom per filing status",
+    "stuck":"Only need one number? For a married couple with little income, memorize ~131,100 for 2026. That is the approximate long-term PROFIT they can realize at a 0% regular federal rate."
+  },
+  {
+    "id":"step-5","phase":2,"emoji":"⏳","title":"Long-term vs. short-term","time":"4 min",
+    "desc":"The 0% rate is ONLY for long-term gains - assets held more than one year. Short-term gains (held one year or less) are taxed like ordinary income at your regular rate, and get no 0% treatment. The holding period is non-negotiable.",
+    "toggle":"I can tell long-term from short-term ✓",
+    "copies":[{"label":"Long-term rule","text":"Held MORE THAN ONE YEAR = long-term = eligible for 0%. One year or less = short-term = taxed as ordinary income."}],
+    "substeps":["Define long-term: held MORE than one year","Define short-term: held one year or less","Short-term = ordinary income rates, NO 0% bracket","Check each lot's purchase date before harvesting it"],
+    "learn":"The one-year holding line and why short-term gains are disqualified from 0%",
+    "stuck":"Borderline on timing? If you are close to the one-year mark, waiting a few extra days to cross into long-term can change the tax on the gain from your ordinary rate all the way down to 0%. Check the actual purchase date."
+  },
+  {
+    "id":"step-6","phase":2,"emoji":"🍽️","title":"Know what eats your 0% space","time":"5 min",
+    "desc":"Your other income fills the brackets FIRST, then gains stack on top - so other income shrinks your 0% room dollar for dollar. Qualified dividends share the same preferential brackets and eat space too. You cannot earn a big salary and then add tax-free gains on top of it.",
+    "toggle":"I can compute my real 0% room ✓",
+    "copies":[
+      {"label":"What consumes your 0% room","text":"room_at_0% = (zero_top + standard_deduction) - ordinary_income - qualified_dividends, floored at 0."},
+      {"label":"Ordinary income examples","text":"Wages, interest, pension, taxable IRA/401k withdrawals, and Roth conversions all fill the brackets first."}
+    ],
+    "substeps":["List your ordinary income for the year (wages, interest, pension, withdrawals, Roth conversions)","Add qualified dividends - they consume 0% space too","Subtract both from (zero_top + standard_deduction)","Floor the result at 0 - that is your real harvest room"],
+    "learn":"The stacking order and the formula for real 0% room after other income and dividends",
+    "stuck":"Why does salary matter? Income stacks from the bottom. Ordinary income fills the brackets first; your gains sit ON TOP. If ordinary income already reaches the 0% ceiling, there is no room left underneath for tax-free gains."
+  },
+  {
+    "id":"step-7","phase":3,"emoji":"🧺","title":"Harvest a gain on paper","time":"7 min",
+    "desc":"Walk a full harvest. A married couple holds a long-term lot: $100,000 basis, now worth $230,000 - a $130,000 unrealized gain. In a year with no other income, their 2026 MFJ 0% room is ~$131,100. They sell, realize the $130,000 gain, and owe $0 regular federal tax on it.",
+    "toggle":"I traced the $130k harvest end-to-end ✓",
+    "copies":[{"label":"The $130k harvest (MFJ, 2026)","text":"basis 100,000 | value 230,000 | gain 130,000 | other income 0 | MFJ room ~131,100 | federal tax on gain = $0."}],
+    "substeps":["Compute the unrealized gain: 230,000 - 100,000 = 130,000","Confirm it fits under MFJ room ~131,100","Realize the gain by selling the long-term lot","Federal tax on the gain: $0 - it all sits in the 0% bracket"],
+    "learn":"How a real harvest fits a gain under the 0% ceiling for $0 federal tax",
+    "stuck":"Feels too good? It is real, but tight: $130,000 of gain fits under ~$131,100 ONLY because there is no other income. Add any wages, interest, or dividends and some of that gain spills into the 15% bracket."
+  },
+  {
+    "id":"step-8","phase":3,"emoji":"🔁","title":"Reinvest &amp; reset your basis","time":"6 min",
+    "desc":"You do not have to spend the money. Buy the investment right back. Your new cost basis becomes roughly today's price, so you have converted unrealized appreciation into fresh basis at a 0% tax cost. And because you are realizing a GAIN, the wash-sale rule generally does not apply.",
+    "toggle":"I can reset basis and dodge wash-sale worries ✓",
+    "copies":[
+      {"label":"Reset the basis","text":"Harvest the gain at 0%, rebuy immediately -> new basis ~ current price. The wash-sale rule does not block gains."},
+      {"label":"Why it means more money","text":"Tax you did not pay stays invested and compounds. 0% beats 15% / 20% / +3.8% NIIT on the same slice of gain."}
+    ],
+    "substeps":["Rebuy the shares right after selling","New basis resets to ~ current price (e.g. 230,000)","Note: wash-sale blocks LOSSES, not GAINS - no 30-day wait needed","That first 130,000 is now permanently out of future taxable gain"],
+    "learn":"Basis reset mechanics and why wash-sale rules do not interfere with gain harvesting",
+    "stuck":"Why no wash-sale problem? The wash-sale rule exists to stop people from claiming a LOSS while staying invested. When you realize a GAIN there is no loss to disallow, so you can sell and rebuy the same security immediately."
+  },
+  {
+    "id":"step-9","phase":4,"emoji":"🧮","title":"Run the harvest calculator","time":"5 min",
+    "desc":"Open harvest_guide.html and use the Interactive Harvest Calculator. Plug in scenarios and watch how filing status, other income, and your lot's basis move both the 0% room and how much stock you can sell.",
+    "toggle":"I ran all three scenarios in the calculator ✓",
+    "copies":[
+      {"label":"Calculator location","text":"harvest_guide.html -> Interactive Harvest Calculator. Change status, other income, qualified dividends, basis, and value."},
+      {"label":"Scenarios to try","text":"A) MFJ, 0 income, basis 100k / value 230k. B) add 40,000 ordinary income, watch room shrink. C) raise value to 500k, see the overflow above 0%."}
+    ],
+    "substeps":["Scenario A: MFJ, 0 income, basis 100k, value 230k -> note the 0% room","Scenario B: add 40,000 ordinary income -> room shrinks dollar-for-dollar","Scenario C: raise value to 500k -> watch gain spill past 0% into 15%","Confirm the 'stock to sell' number matches gain / gain-ratio"],
+    "learn":"How status, other income, and basis interact to set your harvest size",
+    "stuck":"Calculator missing? It is in the 'Interactive Harvest Calculator' section near the middle of harvest_guide.html. If outputs do not update, hard-refresh (Ctrl+F5)."
+  },
+  {
+    "id":"step-10","phase":4,"emoji":"🎁","title":"Work the gifting play","time":"6 min",
+    "desc":"A related move: gift appreciated stock instead of selling it yourself. The recipient generally takes YOUR cost basis (carryover) and holding period, so the gain travels with the shares - but now THEIR bracket governs. An independent adult with low income might sell inside their own 0% bracket. Beware the kiddie tax.",
+    "toggle":"I can run the gifting play and spot the traps ✓",
+    "copies":[
+      {"label":"Carryover basis","text":"Gift appreciated stock -> recipient generally takes YOUR basis and holding period. basis 5,000 / value 35,000 -> their gain ~30,000 in THEIR bracket."},
+      {"label":"Kiddie-tax trap","text":"Can apply to under-18, age-18 not self-supporting by earned income, OR full-time students 19-23 not self-supporting. Their unearned income may be taxed at parents rates."},
+      {"label":"Gift tax 2026","text":"Annual exclusion 19,000 per giver (38,000 per couple). Above that -> Form 709 + lifetime exemption 15,000,000 per person. Donor reports, not recipient."}
+    ],
+    "substeps":["Gift the STOCK, not cash from a sale you made","Recipient inherits your basis + holding period (carryover)","Check the kiddie tax: not just under-18; includes some students 19-23","Gift tax is the donor's issue; 19k/38k annual, 15M lifetime (2026)"],
+    "learn":"Carryover basis, recipient-bracket gains, the kiddie tax, and 2026 gift-tax limits",
+    "stuck":"Why not just sell and gift cash? Because selling realizes the gain in YOUR (possibly high) bracket. Gifting the shares lets the gain be realized later in the RECIPIENT'S (possibly 0%) bracket - as long as the kiddie tax does not apply and it is a genuine gift."
+  },
+  {
+    "id":"step-11","phase":4,"emoji":"⚠️","title":"Internalize the catches","time":"5 min",
+    "desc":"Harvesting is powerful but has sharp edges. Even at a 0% RATE, the realized gain still raises your AGI/MAGI - which can cut ACA subsidies, tax more of your Social Security, and raise Medicare IRMAA later. State tax is separate. The limits change yearly. And a gift must be a real gift.",
+    "toggle":"I can name and defend against every catch ✓",
+    "copies":[
+      {"label":"AGI/MAGI side effects","text":"Even at a 0% rate, the gain raises AGI/MAGI -> can cut ACA subsidies, tax more Social Security, and raise Medicare IRMAA later."},
+      {"label":"Other catches","text":"Long-term only (>1yr). State tax is separate. Limits change yearly with inflation. A gift must be a real gift."}
+    ],
+    "substeps":["AGI/MAGI: the gain counts as income for ACA, Social Security, IRMAA","State tax: 0% federal does NOT mean 0% state","Inflation: re-verify the dollar limits every year","Realness: no secret give-back arrangements on gifts"],
+    "learn":"The MAGI side effects, state tax, annual changes, and the real-gift requirement",
+    "stuck":"Why care if the rate is 0%? Because many benefits key off INCOME, not tax paid. A big 0%-taxed gain can still spike your MAGI and quietly cost you ACA subsidies or trigger IRMAA surcharges two years later. Model the whole picture, not just the capital-gains line."
+  },
+  {
+    "id":"step-12","phase":4,"emoji":"📖","title":"Quiz yourself on the glossary","time":"4 min",
+    "desc":"Final check. Without scrolling back, define each term from memory, then grade yourself against the guide's Glossary. Fluency in the vocabulary is what lets you actually plan a harvest.",
+    "toggle":"I can define all the core terms from memory ✓",
+    "copies":[{"label":"Core terms","text":"LTCG, STCG, cost basis, proceeds, realized vs unrealized, taxable income, standard deduction, AGI/MAGI, qualified dividends, NIIT, wash-sale, carryover basis, step-up, holding period, kiddie tax, annual exclusion, lifetime exemption, Form 709, IRMAA."}],
+    "substeps":["Write a one-line definition for each term","Open the Glossary in harvest_guide.html and grade yourself","Re-read the section for any term you missed","Re-quiz the missed terms tomorrow"],
+    "learn":"Working fluency in the vocabulary needed to plan and discuss a harvest",
+    "stuck":"Hardest for most people: carryover basis vs. step-up (gifts keep your basis; inheritances reset it at death), and why a 0% gain still raises MAGI. Re-read those two first."
+  }
+];
+const POSITIONS = [
+  {"x":5.2,"y":16.0},{"x":19.9,"y":49.0},{"x":5.2,"y":82.0},
+  {"x":30.1,"y":16.0},{"x":44.9,"y":49.0},{"x":30.1,"y":82.0},
+  {"x":53.9,"y":16.0},{"x":62.8,"y":82.0},
+  {"x":73.1,"y":16.0},{"x":93.6,"y":38.0},{"x":73.1,"y":60.0},{"x":93.6,"y":82.0}
+];
+const STORAGE_KEY = 'quest-' + btoa(unescape(encodeURIComponent('Tax-Gain Harvesting Training Quest'))).slice(0,12);
+let state = loadState();
+function loadState(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s)}catch(e){}return{completed:{}}}
+function saveState(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
+function isComplete(id){return !!state.completed[id]}
+function completedCount(){return CHECKPOINTS.filter(c=>isComplete(c.id)).length}
+function render(){renderPath();renderNodes();updateProgress()}
+function updateProgress(){const n=completedCount(),t=CHECKPOINTS.length,p=Math.round(n/t*100);document.getElementById('progressFill').style.width=p+'%';document.getElementById('progressLabel').textContent=n+' of '+t}
+function getActiveIndex(){for(let i=0;i<CHECKPOINTS.length;i++){if(!isComplete(CHECKPOINTS[i].id))return i}return CHECKPOINTS.length}
+function renderPath(){const svg=document.getElementById('pathSvg'),w=window.innerWidth,h=window.innerHeight-52;svg.setAttribute('viewBox','0 0 '+w+' '+h);let html='';const pts=POSITIONS.map(p=>({x:p.x/100*w,y:p.y/100*h}));const ai=getActiveIndex();for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1],cx1=a.x+(b.x-a.x)*.6,cy1=a.y,cx2=a.x+(b.x-a.x)*.4,cy2=b.y;const d='M'+a.x+','+a.y+' C'+cx1+','+cy1+' '+cx2+','+cy2+' '+b.x+','+b.y;const done=isComplete(CHECKPOINTS[i].id)&&isComplete(CHECKPOINTS[i+1].id);const partial=isComplete(CHECKPOINTS[i].id)&&!isComplete(CHECKPOINTS[i+1].id);const active=i===ai-1||i===ai;if(done)html+='<path d="'+d+'" fill="none" stroke="var(--green)" stroke-width="3" stroke-opacity=".5"/>';else if(partial||active)html+='<path d="'+d+'" fill="none" stroke="var(--amber)" stroke-width="2.5" stroke-opacity=".45" stroke-dasharray="8 6"><animate attributeName="stroke-dashoffset" from="28" to="0" dur="1.5s" repeatCount="indefinite"/></path>';else html+='<path d="'+d+'" fill="none" stroke="var(--border)" stroke-width="2" stroke-dasharray="6 8" stroke-opacity=".6"/>'}svg.innerHTML=html}
+function renderNodes(){document.querySelectorAll('.node').forEach(n=>n.remove());const map=document.getElementById('questMap'),ai=getActiveIndex();CHECKPOINTS.forEach((cp,i)=>{const pos=POSITIONS[i];if(!pos)return;const node=document.createElement('div');node.className='node';if(isComplete(cp.id))node.classList.add('complete');else if(i===ai)node.classList.add('active');node.style.left=pos.x+'%';node.style.top='calc('+pos.y+'% + 0px)';const isLocked=i>ai&&!isComplete(cp.id);node.innerHTML='<div class="ring"></div><div class="inner"><span class="emoji">'+(isLocked?'🔒':cp.emoji)+'</span><svg class="check-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><polyline points="4 12 10 18 20 6"/></svg>'+(isLocked?'<span class="lock"></span>':'')+'</div><div class="label">'+cp.title+'</div>';node.addEventListener('click',()=>openPanel(i));map.appendChild(node)})}
+let currentPanel=-1;
+function openPanel(idx){currentPanel=idx;const cp=CHECKPOINTS[idx];document.getElementById('panelEmoji').textContent=cp.emoji;document.getElementById('panelTitle').innerHTML=cp.title;document.getElementById('panelTime').textContent=cp.time?'⏱ '+cp.time:'';let html='<div class="desc">'+cp.desc+'</div>';if(cp.substeps){html+='<ol class="substeps">';cp.substeps.forEach(s=>html+='<li>'+s+'</li>');html+='</ol>'}if(cp.copies){html+='<div class="copy-group">';cp.copies.forEach(c=>{html+='<div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">'+c.label+'</div><div class="copy-block"><span class="copy-text">'+escHtml(c.text)+'</span><button class="copy-btn" onclick="copyText(this,\''+escAttr(c.text)+'\')" title="Copy">📋</button></div></div>'});html+='</div>'}if(cp.learn){html+='<div style="font-size:13px;color:var(--text-muted)">🌱 <b>What you learn:</b> '+cp.learn+'</div>'}const checked=isComplete(cp.id);html+='<button class="toggle-done '+(checked?'checked':'')+'" onclick="toggleDone(\''+cp.id+'\',this)"><span class="dot">'+(checked?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><polyline points="4 12 10 18 20 6"/></svg>':'')+'</span><span>'+(cp.toggle||'Done ✓')+'</span></button>';if(cp.stuck){html+='<div><button class="stuck-toggle" onclick="this.nextElementSibling.classList.toggle(\'open\')">🆘 I\'m stuck</button><div class="stuck-content"><p>'+cp.stuck+'</p></div></div>'}document.getElementById('panelBody').innerHTML=html;document.getElementById('overlay').classList.add('open');document.getElementById('panel').classList.add('open')}
+function closePanel(){document.getElementById('overlay').classList.remove('open');document.getElementById('panel').classList.remove('open');currentPanel=-1}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function escAttr(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
+function copyText(btn,text){navigator.clipboard.writeText(text).then(()=>{btn.classList.add('copied');btn.textContent='✓';setTimeout(()=>{btn.classList.remove('copied');btn.textContent='📋'},1500)}).catch(()=>{const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;left:-9999px';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);btn.classList.add('copied');btn.textContent='✓';setTimeout(()=>{btn.classList.remove('copied');btn.textContent='📋'},1500)})}
+function toggleDone(id,btn){if(isComplete(id)){delete state.completed[id];btn.classList.remove('checked');btn.querySelector('.dot').innerHTML=''}else{state.completed[id]=true;btn.classList.add('checked');btn.querySelector('.dot').innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><polyline points="4 12 10 18 20 6"/></svg>';celebrate(id)}saveState();render()}
+function celebrate(id){const idx=CHECKPOINTS.findIndex(c=>c.id===id),pos=POSITIONS[idx];if(!pos)return;const x=pos.x/100*window.innerWidth,y=pos.y/100*(window.innerHeight-52)+52;spawnParticles(x,y,12);const maxP=Math.max(...CHECKPOINTS.map(c=>c.phase));for(let p=1;p<=maxP;p++){const phase=CHECKPOINTS.filter(c=>c.phase===p);if(phase.every(c=>isComplete(c.id))&&id===phase[phase.length-1].id)setTimeout(()=>tractorAnimation(),400)}if(completedCount()===CHECKPOINTS.length)setTimeout(()=>{confettiExplosion();showBanner()},600)}
+function spawnParticles(cx,cy,count){const colors=['#d79a1e','#3f7f2c','#a8730c','#c0902a','#a6401f'];for(let i=0;i<count;i++){const el=document.createElement('div');el.className='particle';el.style.left=cx+'px';el.style.top=cy+'px';el.style.background=colors[i%colors.length];document.body.appendChild(el);const angle=Math.random()*Math.PI*2,dist=40+Math.random()*60,dx=Math.cos(angle)*dist,dy=Math.sin(angle)*dist;el.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:'translate('+dx+'px,'+dy+'px) scale(0)',opacity:0}],{duration:600+Math.random()*400,easing:'cubic-bezier(.4,0,.2,1)'}).onfinish=()=>el.remove()}}
+function tractorAnimation(){const el=document.createElement('div');el.className='rocket-anim';el.textContent='🚜';el.style.left='-60px';el.style.bottom='18%';document.body.appendChild(el);el.animate([{transform:'translate(0,0)',opacity:1},{transform:'translate('+(window.innerWidth+120)+'px,0) ',opacity:.9}],{duration:1800,easing:'cubic-bezier(.25,.1,.25,1)'}).onfinish=()=>el.remove()}
+function confettiExplosion(){const colors=['#d79a1e','#3f7f2c','#a8730c','#c0902a','#a6401f','#e8c766','#6fae4e'];for(let i=0;i<60;i++){const el=document.createElement('div');el.className='confetti';el.style.background=colors[i%colors.length];el.style.left=Math.random()*window.innerWidth+'px';el.style.top='-20px';el.style.width=(6+Math.random()*8)+'px';el.style.height=(10+Math.random()*12)+'px';el.style.borderRadius=Math.random()>.5?'50%':'2px';document.body.appendChild(el);const x=(Math.random()-.5)*200,spin=Math.random()*720-360;el.animate([{transform:'translate(0,0) rotate(0deg)',opacity:1},{transform:'translate('+x+'px,'+(window.innerHeight+40)+'px) rotate('+spin+'deg)',opacity:.6}],{duration:2000+Math.random()*1500,easing:'cubic-bezier(.25,.1,.25,1)',delay:Math.random()*300}).onfinish=()=>el.remove()}}
+function showBanner(){const b=document.getElementById('banner');b.classList.add('show');setTimeout(()=>b.classList.remove('show'),4000)}
+function resetProgress(){if(!confirm('Reset all progress? This cannot be undone.'))return;state={completed:{}};saveState();closePanel();render()}
+render();window.addEventListener('resize',()=>render());
+</script>
+</body>
+</html>
